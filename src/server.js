@@ -32,7 +32,7 @@ admin.initializeApp({
 
 app.use(cors());
 app.use(cors({
-    origin: 'http://localhost:7777', // Your frontend URL
+    origin: 'http://localhost:3000', // Your frontend URL
     credentials: true, // Allow cookies/credentials
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
