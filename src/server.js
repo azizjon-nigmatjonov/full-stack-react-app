@@ -17,10 +17,25 @@ let db;
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const credentials = JSON.parse(fs.readFileSync('./credentials.json'));
-admin.initializeApp({
-  credential: admin.credential.cert(credentials)
-});
+// Initialize Firebase Admin SDK
+let firebaseApp;
+if (process.env.FIREBASE_CREDENTIALS) {
+  // Production: Use environment variable for service account key
+  const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+  firebaseApp = admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
+} else {
+  // Development: Try to read from credentials.json file
+  try {
+    const credentials = JSON.parse(fs.readFileSync('./credentials.json'));
+    firebaseApp = admin.initializeApp({
+      credential: admin.credential.cert(credentials)
+    });
+  } catch (error) {
+    console.warn('Firebase credentials not found. Firebase authentication will not work.');
+  }
+}
 
 
 app.use(cors());
@@ -76,9 +91,16 @@ app.get('/api/articles/:name', async (req, res) => {
 app.use(async function(req, res, next) {
     const {authtoken} = req.headers;
     if (authtoken) {
-        const user = await admin.auth().verifyIdToken(authtoken);
-        req.user = user;
-        next();
+        if (!firebaseApp) {
+            return res.status(500).json({ error: 'Firebase not initialized' });
+        }
+        try {
+            const user = await admin.auth().verifyIdToken(authtoken);
+            req.user = user;
+            next();
+        } catch (error) {
+            res.status(401).json({ error: 'Invalid token' });
+        }
     } else {
         res.status(401).json({ error: 'Unauthorized' });
     }
