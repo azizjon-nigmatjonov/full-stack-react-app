@@ -15,10 +15,13 @@ export class MeAPI {
 
     async updateMe(updatedData) {
         try {
+            // Only update the fields that are provided, add updatedAt timestamp
+            const updateFields = { ...updatedData, updatedAt: new Date() };
+            
             const result = await this.db.collection('me').findOneAndUpdate(
-                {},
-                { $set: { ...updatedData, updatedAt: new Date() } },
-                { returnDocument: 'after', upsert: true }
+                {}, // Find the first document (assuming single user profile)
+                { $set: updateFields }, // Only set the provided fields
+                { returnDocument: 'after', upsert: false } // Don't create if doesn't exist
             );
             return result;
         } catch (error) {
