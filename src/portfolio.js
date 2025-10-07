@@ -20,7 +20,10 @@ export class PortfolioAPI {
             const portfolios = await this.db.collection('portfolios').countDocuments();
             if (portfolios === 0) {
                 const defaultPortfolios = [];
-                await this.db.collection('portfolios').insertMany(defaultPortfolios);
+                // Only insert if there are default portfolios to add
+                if (defaultPortfolios.length > 0) {
+                    await this.db.collection('portfolios').insertMany(defaultPortfolios);
+                }
             }
         } catch (error) {
             console.error('Error initializing portfolios:', error);
