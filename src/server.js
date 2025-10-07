@@ -8,6 +8,8 @@ import path from 'path';
 import { OwnerAPI } from './owner.js';
 import { UsersAPI } from './users.js';
 import { MeAPI } from './me.js';
+import { PortfolioAPI } from './portfolio.js';
+import { upload, handleImageUpload, handleMultipleImagesUpload } from './upload.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,6 +21,7 @@ let db;
 let ownerAPI;
 let usersAPI;
 let meAPI;
+let portfolioAPI;
 
 const app = express();
 const PORT = process.env.PORT || 8888;
@@ -54,6 +57,7 @@ async function connectToMongo() {
         ownerAPI = new OwnerAPI(db);
         usersAPI = new UsersAPI(db);
         meAPI = new MeAPI(db);
+        portfolioAPI = new PortfolioAPI(db);
         console.log('Connected to MongoDB');
     } catch (error) {
         console.error('Error connecting to MongoDB:', error);
@@ -143,6 +147,11 @@ app.use(async function(req, res, next) {
     }
 }) 
 
+// Image upload routes (protected by authentication middleware above)
+app.post('/api/upload-image', upload.single('image'), handleImageUpload);
+
+app.post('/api/upload-images', upload.array('images', 10), handleMultipleImagesUpload);
+
 app.put('/api/articles/:name/upvote', async (req, res) => {
     try {
         const { name } = req.params;
@@ -173,6 +182,7 @@ async function startServer() {
     await ownerAPI.initializeArticles();
     await usersAPI.initializeUsers();
     await meAPI.initializeMe();
+    await portfolioAPI.initializePortfolios();
 
     app.listen(PORT, () => {
         console.log(`Server is running on http://localhost:${PORT}`);
