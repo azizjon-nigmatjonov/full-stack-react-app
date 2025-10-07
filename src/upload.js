@@ -1,5 +1,6 @@
 import multer from 'multer';
 import admin from 'firebase-admin';
+import { uploadImageToImageBB } from './imagebb.js';
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
@@ -26,48 +27,10 @@ export const upload = multer({
 
 // Get Firebase Storage bucket
 const getBucket = () => {
-    return admin.storage().bucket('gs://your-project-id.appspot.com'); // Replace with your Firebase Storage bucket URL
+    return admin.storage().bucket(); // Uses bucket from Firebase app initialization
 };
 
-/**
- * Upload image to Firebase Storage
- * @param {Buffer} fileBuffer - The file buffer from multer
- * @param {String} originalName - Original filename
- * @param {String} mimetype - File mimetype
- * @param {String} folder - Optional folder path in storage (e.g., 'portfolios', 'profiles')
- * @returns {Promise<String>} - Public URL of uploaded image
- */
-export const uploadImageToFirebase = async (fileBuffer, originalName, mimetype, folder = 'images') => {
-    try {
-        const bucket = getBucket();
-        
-        // Generate unique filename
-        const timestamp = Date.now();
-        const fileName = `${folder}/${timestamp}-${originalName.replace(/\s+/g, '-')}`;
-        
-        // Create a file reference
-        const file = bucket.file(fileName);
-        
-        // Upload file buffer
-        await file.save(fileBuffer, {
-            metadata: {
-                contentType: mimetype,
-            },
-            public: true, // Makes the file publicly accessible
-        });
-        
-        // Make the file public and get URL
-        await file.makePublic();
-        
-        // Return public URL
-        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-        return publicUrl;
-        
-    } catch (error) {
-        console.error('Error uploading image to Firebase:', error);
-        throw new Error('Failed to upload image');
-    }
-};
+// Image upload function moved to imagebb.js
 
 /**
  * Delete image from Firebase Storage
@@ -103,7 +66,7 @@ export const handleImageUpload = async (req, res) => {
         
         const folder = req.body.folder || 'images';
         
-        const imageUrl = await uploadImageToFirebase(
+        const imageUrl = await uploadImageToImageBB(
             req.file.buffer,
             req.file.originalname,
             req.file.mimetype,
@@ -133,11 +96,11 @@ export const handleMultipleImagesUpload = async (req, res) => {
             return res.status(400).json({ error: 'No files uploaded' });
         }
         
-        const folder = req.body.folder || 'images';
+        const folder = 'images';
         
         // Upload all images in parallel
         const uploadPromises = req.files.map(file => 
-            uploadImageToFirebase(
+            uploadImageToImageBB(
                 file.buffer,
                 file.originalname,
                 file.mimetype,
@@ -158,6 +121,94 @@ export const handleMultipleImagesUpload = async (req, res) => {
         console.error('Upload error:', error);
         res.status(500).json({ 
             error: error.message || 'Failed to upload images' 
+        });
+    }
+};
+
+/**
+ * Express route handler for deleting an image
+ */
+export const handleImageDelete = async (req, res) => {
+    try {
+        const { imageUrl } = req.body;
+        
+        if (!imageUrl) {
+            return res.status(400).json({ error: 'Image URL is required' });
+        }
+        
+        await deleteImageFromFirebase(imageUrl);
+        
+        res.json({
+            success: true,
+            message: 'Image deleted successfully'
+        });
+        
+    } catch (error) {
+        console.error('Delete error:', error);
+        res.status(500).json({ 
+            error: error.message || 'Failed to delete image' 
+        });
+    }
+};
+
+/**
+ * List all images from a specific folder in Firebase Storage
+ * @param {String} folder - Folder path (e.g., 'images', 'portfolios')
+ * @param {Number} maxResults - Maximum number of results (default: 100)
+ * @returns {Promise<Array>} - Array of image objects with name, url, and metadata
+ */
+export const listImagesFromFirebase = async (folder = 'images', maxResults = 100) => {
+    try {
+        const bucket = getBucket();
+        
+        // Get all files from the specified folder
+        const [files] = await bucket.getFiles({
+            prefix: folder + '/',
+            maxResults: maxResults,
+        });
+        
+        // Map files to useful information
+        const imageList = files.map(file => {
+            const publicUrl = `https://storage.googleapis.com/${bucket.name}/${file.name}`;
+            return {
+                name: file.name,
+                url: publicUrl,
+                size: file.metadata.size,
+                contentType: file.metadata.contentType,
+                created: file.metadata.timeCreated,
+                updated: file.metadata.updated,
+            };
+        });
+        
+        return imageList;
+        
+    } catch (error) {
+        console.error('Error listing images from Firebase:', error);
+        throw new Error('Failed to list images');
+    }
+};
+
+/**
+ * Express route handler for listing images
+ */
+export const handleImagesList = async (req, res) => {
+    try {
+        const folder = 'images';
+        const maxResults = parseInt(req.query.limit) || 100;
+        
+        const images = await listImagesFromFirebase(folder, maxResults);
+        
+        res.json({
+            success: true,
+            folder: folder,
+            count: images.length,
+            images: images
+        });
+        
+    } catch (error) {
+        console.error('List error:', error);
+        res.status(500).json({ 
+            error: error.message || 'Failed to list images' 
         });
     }
 };

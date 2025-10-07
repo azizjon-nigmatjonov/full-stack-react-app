@@ -9,7 +9,7 @@ import { OwnerAPI } from './owner.js';
 import { UsersAPI } from './users.js';
 import { MeAPI } from './me.js';
 import { PortfolioAPI } from './portfolio.js';
-import { upload, handleImageUpload, handleMultipleImagesUpload } from './upload.js';
+import { upload, handleImageUpload, handleMultipleImagesUpload, handleImageDelete, handleImagesList } from './upload.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,7 +35,8 @@ if (process.env.FIREBASE_CREDENTIALS) {
     credentials = JSON.parse(fs.readFileSync('./credentials.json'));
 }
 admin.initializeApp({
-  credential: admin.credential.cert(credentials)
+  credential: admin.credential.cert(credentials),
+  storageBucket: credentials.project_id + '.appspot.com' // Add storage bucket
 });
 
 
@@ -66,6 +67,7 @@ async function connectToMongo() {
 }
 
 app.use(express.static(path.join(__dirname, 'dist')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get(/^(?!\/api).+/, (req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
@@ -136,6 +138,8 @@ app.put('/api/me', async (req, res) => {
     }
 });
 
+// Portfolio routes
+
 app.use(async function(req, res, next) {
     const {authtoken} = req.headers;
     if (authtoken) {
@@ -149,8 +153,9 @@ app.use(async function(req, res, next) {
 
 // Image upload routes (protected by authentication middleware above)
 app.post('/api/upload-image', upload.single('image'), handleImageUpload);
-
 app.post('/api/upload-images', upload.array('images', 10), handleMultipleImagesUpload);
+app.delete('/api/delete-image', handleImageDelete);
+app.get('/api/images', handleImagesList);
 
 app.put('/api/articles/:name/upvote', async (req, res) => {
     try {
@@ -174,6 +179,48 @@ app.post('/api/articles/:name/comments', async (req, res) => {
         res.json(updatedArticle);
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+// Protected portfolio routes
+
+app.get('/api/portfolios', async (req, res) => {
+    try {
+        const portfolios = await portfolioAPI.getAllPortfolios();
+        res.json(portfolios);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/portfolios', async (req, res) => {
+    try {
+        const portfolio = await portfolioAPI.createPortfolio(req.body);
+        res.status(201).json(portfolio);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.put('/api/portfolios/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updatedPortfolio = await portfolioAPI.updatePortfolio(id, req.body);
+        res.json(updatedPortfolio);
+    } catch (error) {
+        const statusCode = error.message === 'Portfolio not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
+app.delete('/api/portfolios/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await portfolioAPI.deletePortfolio(id);
+        res.json(result);
+    } catch (error) {
+        const statusCode = error.message === 'Portfolio not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
     }
 });
 

@@ -30,4 +30,54 @@ export class PortfolioAPI {
             throw error;
         }
     }
+
+    async createPortfolio(portfolioData) {
+        try {
+            const result = await this.db.collection('portfolios').insertOne(portfolioData);
+            return {
+                ...portfolioData,
+                _id: result.insertedId
+            };
+        } catch (error) {
+            console.error('Error creating portfolio:', error);
+            throw new Error('Failed to create portfolio');
+        }
+    }
+
+    async updatePortfolio(id, portfolioData) {
+        try {
+            const { ObjectId } = require('mongodb');
+            const result = await this.db.collection('portfolios').updateOne(
+                { _id: new ObjectId(id) },
+                { $set: portfolioData }
+            );
+            
+            if (result.matchedCount === 0) {
+                throw new Error('Portfolio not found');
+            }
+            
+            return { _id: id, ...portfolioData };
+        } catch (error) {
+            console.error('Error updating portfolio:', error);
+            throw new Error('Failed to update portfolio');
+        }
+    }
+
+    async deletePortfolio(id) {
+        try {
+            const { ObjectId } = require('mongodb');
+            const result = await this.db.collection('portfolios').deleteOne(
+                { _id: new ObjectId(id) }
+            );
+            
+            if (result.deletedCount === 0) {
+                throw new Error('Portfolio not found');
+            }
+            
+            return { success: true, message: 'Portfolio deleted successfully' };
+        } catch (error) {
+            console.error('Error deleting portfolio:', error);
+            throw new Error('Failed to delete portfolio');
+        }
+    }
 }
