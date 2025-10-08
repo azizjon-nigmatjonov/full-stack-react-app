@@ -26,7 +26,7 @@ export const uploadImageToImageBB = async (fileBuffer, originalName, mimetype) =
         formData.append('name', `${Date.now()}-${originalName.replace(/\s+/g, '-')}`);
         
         // Try ImageBB with a demo key (you should get your own free key)
-        const response = await fetch('https://api.imgbb.com/1/upload?key=3b6f441857ff1cf3032be40f3dbbd585', {
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${process.env.IMAGEBB_API_KEY}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
