@@ -101,25 +101,6 @@ app.get('/api/users/:uid', async (req, res) => {
     }
 });
 
-app.get('/api/articles', async (req, res) => {
-    try {
-        const articles = await ownerAPI.getAllArticles();
-        res.json(articles);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.get('/api/articles/:name', async (req, res) => {
-    try {
-        const { name } = req.params;
-        const foundArticle = await ownerAPI.getArticleByName(name);
-        res.json(foundArticle);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
 app.get('/api/me', async (req, res) => {
     try {
         const user = await meAPI.getMe();
@@ -147,6 +128,16 @@ app.get('/api/portfolios', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+app.get('/api/portfolios/:id', async (req, res) => {
+    try {
+        const portfolio = await portfolioAPI.getPortfolioById(req.params.id);
+        res.json(portfolio);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 // Protected portfolio routes
 app.use(async function(req, res, next) {
