@@ -15,6 +15,22 @@ export class PortfolioAPI {
         }
     }
 
+    async getPortfolioById(id) {
+        try {
+            const { ObjectId } = require('mongodb');
+            const portfolio = await this.db.collection('portfolios').findOne({ _id: new ObjectId(id) });
+            
+            if (!portfolio) {
+                throw new Error('Portfolio not found');
+            }
+            
+            return portfolio;
+        } catch (error) {
+            console.error('Error fetching portfolio by id:', error);
+            throw new Error('Failed to fetch portfolio');
+        }
+    }
+
     async initializePortfolios() {
         try {
             const portfolios = await this.db.collection('portfolios').countDocuments();
