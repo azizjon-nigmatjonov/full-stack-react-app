@@ -138,8 +138,17 @@ app.put('/api/me', async (req, res) => {
     }
 });
 
-// Portfolio routes
+// Portfolio route
+app.get('/api/portfolios', async (req, res) => {
+    try {
+        const portfolios = await portfolioAPI.getAllPortfolios();
+        res.json(portfolios);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
+// Protected portfolio routes
 app.use(async function(req, res, next) {
     const {authtoken} = req.headers;
     if (authtoken) {
@@ -156,42 +165,6 @@ app.post('/api/upload-image', upload.single('image'), handleImageUpload);
 app.post('/api/upload-images', upload.array('images', 10), handleMultipleImagesUpload);
 app.delete('/api/delete-image', handleImageDelete);
 app.get('/api/images', handleImagesList);
-
-app.put('/api/articles/:name/upvote', async (req, res) => {
-    try {
-        const { name } = req.params;
-        const { uid } = req.user;
-        const updatedArticle = await ownerAPI.upvoteArticle(name, uid);
-        res.json(updatedArticle);
-    } catch (error) {
-        const statusCode = error.message === 'not have uid' ? 401 : 
-                          error.message === 'Article not found' ? 404 : 
-                          error.message === 'Already upvoted' ? 403 : 500;
-        res.status(statusCode).json({ error: error.message });
-    }
-});
-
-app.post('/api/articles/:name/comments', async (req, res) => {
-    try {
-        const { name } = req.params;
-        const { nameText } = req.body;
-        const updatedArticle = await ownerAPI.addComment(name, nameText);
-        res.json(updatedArticle);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Protected portfolio routes
-
-app.get('/api/portfolios', async (req, res) => {
-    try {
-        const portfolios = await portfolioAPI.getAllPortfolios();
-        res.json(portfolios);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
 
 app.post('/api/portfolios', async (req, res) => {
     try {
