@@ -53,7 +53,7 @@ export const uploadImageToImageBB = async (fileBuffer, originalName, mimetype) =
         console.error('Error details:', error.message);
         
         // Fallback: Return a placeholder image URL
-        const fallbackUrl = `https://via.placeholder.com/800x600/cccccc/969696?text=${encodeURIComponent(originalName)}`;
+        const fallbackUrl = '';
         console.log('Using fallback URL:', fallbackUrl);
         return fallbackUrl;
     }

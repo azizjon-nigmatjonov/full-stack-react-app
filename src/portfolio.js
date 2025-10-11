@@ -33,6 +33,11 @@ export class PortfolioAPI {
 
     async createPortfolio(portfolioData) {
         try {
+            // Generate slug from title if title exists
+            if (portfolioData.title) {
+                portfolioData.slug = portfolioData.title.toLowerCase().replace(/\s+/g, '_');
+            }
+            
             const result = await this.db.collection('portfolios').insertOne(portfolioData);
             return {
                 ...portfolioData,
