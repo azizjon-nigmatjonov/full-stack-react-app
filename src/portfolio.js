@@ -7,7 +7,7 @@ export class PortfolioAPI {
 
     async getAllPortfolios() {
         try {
-            const portfolios = await this.db.collection('portfolios').find().toArray();
+            const portfolios = await this.db.collection('portfolios').find().sort({ _id: -1 }).toArray();
             return portfolios;
         } catch (error) {
             console.error('Error fetching portfolios:', error);
