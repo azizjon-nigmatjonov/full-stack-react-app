@@ -83,16 +83,38 @@ export class PortfolioAPI {
 
     async updatePortfolio(id, portfolioData) {
         try {
+            let query;
+            
+            // Check if id is a valid MongoDB ObjectId (24 character hex string)
+            if (id.match(/^[0-9a-fA-F]{24}$/)) {
+                query = { _id: new ObjectId(id) };
+            } else if (/^\d+$/.test(id)) {
+                // If it's a numeric string, try to find by id field (as number or string)
+                query = { 
+                    $or: [
+                        { id: parseInt(id) },
+                        { id: id },
+                        { slug: id }
+                    ]
+                };
+            } else {
+                // Otherwise, try to find by slug
+                query = { slug: id };
+            }
+            
+            // Remove _id from portfolioData to avoid trying to update immutable field
+            const { _id, ...updateData } = portfolioData;
+            
             const result = await this.db.collection('portfolios').updateOne(
-                { _id: new ObjectId(id) },
-                { $set: portfolioData }
+                query,
+                { $set: updateData }
             );
             
             if (result.matchedCount === 0) {
                 throw new Error('Portfolio not found');
             }
             
-            return { _id: id, ...portfolioData };
+            return { _id: id, ...updateData };
         } catch (error) {
             console.error('Error updating portfolio:', error);
             throw new Error('Failed to update portfolio');
@@ -101,9 +123,26 @@ export class PortfolioAPI {
 
     async deletePortfolio(id) {
         try {
-            const result = await this.db.collection('portfolios').deleteOne(
-                { _id: new ObjectId(id) }
-            );
+            let query;
+            
+            // Check if id is a valid MongoDB ObjectId (24 character hex string)
+            if (id.match(/^[0-9a-fA-F]{24}$/)) {
+                query = { _id: new ObjectId(id) };
+            } else if (/^\d+$/.test(id)) {
+                // If it's a numeric string, try to find by id field (as number or string)
+                query = { 
+                    $or: [
+                        { id: parseInt(id) },
+                        { id: id },
+                        { slug: id }
+                    ]
+                };
+            } else {
+                // Otherwise, try to find by slug
+                query = { slug: id };
+            }
+            
+            const result = await this.db.collection('portfolios').deleteOne(query);
             
             if (result.deletedCount === 0) {
                 throw new Error('Portfolio not found');
