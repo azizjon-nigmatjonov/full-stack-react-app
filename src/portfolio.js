@@ -1,4 +1,4 @@
-
+import { ObjectId } from 'mongodb';
 
 export class PortfolioAPI {
     constructor(db) {
@@ -17,8 +17,24 @@ export class PortfolioAPI {
 
     async getPortfolioById(id) {
         try {
-            const { ObjectId } = require('mongodb');
-            const portfolio = await this.db.collection('portfolios').findOne({ _id: new ObjectId(id) });
+            let portfolio;
+            
+            // Check if id is a valid MongoDB ObjectId (24 character hex string)
+            if (id.match(/^[0-9a-fA-F]{24}$/)) {
+                portfolio = await this.db.collection('portfolios').findOne({ _id: new ObjectId(id) });
+            } else if (/^\d+$/.test(id)) {
+                // If it's a numeric string, try to find by id field (as number or string)
+                portfolio = await this.db.collection('portfolios').findOne({ 
+                    $or: [
+                        { id: parseInt(id) },
+                        { id: id },
+                        { slug: id }
+                    ]
+                });
+            } else {
+                // Otherwise, try to find by slug
+                portfolio = await this.db.collection('portfolios').findOne({ slug: id });
+            }
             
             if (!portfolio) {
                 throw new Error('Portfolio not found');
@@ -67,7 +83,6 @@ export class PortfolioAPI {
 
     async updatePortfolio(id, portfolioData) {
         try {
-            const { ObjectId } = require('mongodb');
             const result = await this.db.collection('portfolios').updateOne(
                 { _id: new ObjectId(id) },
                 { $set: portfolioData }
@@ -86,7 +101,6 @@ export class PortfolioAPI {
 
     async deletePortfolio(id) {
         try {
-            const { ObjectId } = require('mongodb');
             const result = await this.db.collection('portfolios').deleteOne(
                 { _id: new ObjectId(id) }
             );
