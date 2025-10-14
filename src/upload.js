@@ -57,6 +57,7 @@ export const deleteImageFromFirebase = async (imageUrl) => {
 
 /**
  * Express route handler for single image upload
+ * Now also saves metadata to MongoDB for tracking
  */
 export const handleImageUpload = async (req, res) => {
     try {
@@ -72,6 +73,16 @@ export const handleImageUpload = async (req, res) => {
             req.file.mimetype,
             folder
         );
+        
+        // Save image metadata to MongoDB if portfolioAPI is available
+        if (req.portfolioAPI) {
+            try {
+                await req.portfolioAPI.saveImageMetadata(imageUrl, req.file.originalname, folder);
+            } catch (dbError) {
+                console.error('Failed to save image metadata to DB:', dbError);
+                // Continue even if DB save fails
+            }
+        }
         
         res.json({
             success: true,
@@ -190,20 +201,31 @@ export const listImagesFromFirebase = async (folder = 'images', maxResults = 100
 
 /**
  * Express route handler for listing images
+ * Now fetches from MongoDB instead of Firebase Storage
  */
 export const handleImagesList = async (req, res) => {
     try {
-        const folder = 'images';
-        const maxResults = parseInt(req.query.limit) || 100;
+        const folder = req.query.folder || null;
         
-        const images = await listImagesFromFirebase(folder, maxResults);
-        
-        res.json({
-            success: true,
-            folder: folder,
-            count: images.length,
-            images: images
-        });
+        // Get images from MongoDB if portfolioAPI is available
+        if (req.portfolioAPI) {
+            const images = await req.portfolioAPI.getAllImages(folder);
+            
+            res.json({
+                success: true,
+                folder: folder || 'all',
+                count: images.length,
+                images: images
+            });
+        } else {
+            // Fallback response if portfolioAPI is not available
+            res.json({
+                success: true,
+                message: 'Image listing requires MongoDB connection',
+                images: [],
+                count: 0
+            });
+        }
         
     } catch (error) {
         console.error('List error:', error);

@@ -154,4 +154,32 @@ export class PortfolioAPI {
             throw new Error('Failed to delete portfolio');
         }
     }
+
+    // Image tracking methods
+    async saveImageMetadata(imageUrl, originalName, folder) {
+        try {
+            const imageMetadata = {
+                url: imageUrl,
+                originalName: originalName,
+                folder: folder || 'images',
+                uploadedAt: new Date(),
+            };
+            await this.db.collection('images').insertOne(imageMetadata);
+            return imageMetadata;
+        } catch (error) {
+            console.error('Error saving image metadata:', error);
+            throw error;
+        }
+    }
+
+    async getAllImages(folder = null) {
+        try {
+            const query = folder ? { folder } : {};
+            const images = await this.db.collection('images').find(query).sort({ uploadedAt: -1 }).toArray();
+            return images;
+        } catch (error) {
+            console.error('Error fetching images:', error);
+            throw error;
+        }
+    }
 }

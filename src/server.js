@@ -138,6 +138,11 @@ app.get('/api/portfolios/:id', async (req, res) => {
     }
 });
 
+// Public image listing endpoint (no auth required)
+app.get('/api/images', (req, res, next) => {
+    req.portfolioAPI = portfolioAPI;
+    next();
+}, handleImagesList);
 
 // Protected portfolio routes
 app.use(async function(req, res, next) {
@@ -152,10 +157,17 @@ app.use(async function(req, res, next) {
 }) 
 
 // Image upload routes (protected by authentication middleware above)
-app.post('/api/upload-image', upload.single('image'), handleImageUpload);
-app.post('/api/upload-images', upload.array('images', 10), handleMultipleImagesUpload);
+app.post('/api/upload-image', (req, res, next) => {
+    req.portfolioAPI = portfolioAPI;
+    next();
+}, upload.single('image'), handleImageUpload);
+
+app.post('/api/upload-images', (req, res, next) => {
+    req.portfolioAPI = portfolioAPI;
+    next();
+}, upload.array('images', 10), handleMultipleImagesUpload);
+
 app.delete('/api/delete-image', handleImageDelete);
-app.get('/api/images', handleImagesList);
 
 app.post('/api/portfolios', async (req, res) => {
     try {
