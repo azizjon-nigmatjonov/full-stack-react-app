@@ -41,7 +41,7 @@ admin.initializeApp({
 
 
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'https://myportfolio-q88t.vercel.app', 'https://myportfolio-pied-eta-vykkrihxyw.vercel.app','https://portfolio-admin-panel-brown.vercel.app'], // Multiple frontend URLs
+    origin: true, // Allow all origins
     credentials: true, // Allow cookies/credentials
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'authtoken'],
