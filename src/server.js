@@ -167,7 +167,10 @@ app.post('/api/upload-images', (req, res, next) => {
     next();
 }, upload.array('images', 10), handleMultipleImagesUpload);
 
-app.delete('/api/delete-image', handleImageDelete);
+app.delete('/api/images/:id', (req, res, next) => {
+    req.portfolioAPI = portfolioAPI;
+    next();
+}, handleImageDelete);
 
 app.post('/api/portfolios', async (req, res) => {
     try {

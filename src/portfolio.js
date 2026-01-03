@@ -182,4 +182,50 @@ export class PortfolioAPI {
             throw error;
         }
     }
+
+    async getImageById(id) {
+        try {
+            let image;
+            
+            // Check if id is a valid MongoDB ObjectId (24 character hex string)
+            if (id.match(/^[0-9a-fA-F]{24}$/)) {
+                image = await this.db.collection('images').findOne({ _id: new ObjectId(id) });
+            } else {
+                throw new Error('Invalid image ID format');
+            }
+            
+            if (!image) {
+                throw new Error('Image not found');
+            }
+            
+            return image;
+        } catch (error) {
+            console.error('Error fetching image by id:', error);
+            throw error;
+        }
+    }
+
+    async deleteImageById(id) {
+        try {
+            let query;
+            
+            // Check if id is a valid MongoDB ObjectId (24 character hex string)
+            if (id.match(/^[0-9a-fA-F]{24}$/)) {
+                query = { _id: new ObjectId(id) };
+            } else {
+                throw new Error('Invalid image ID format');
+            }
+            
+            const result = await this.db.collection('images').deleteOne(query);
+            
+            if (result.deletedCount === 0) {
+                throw new Error('Image not found');
+            }
+            
+            return { success: true, message: 'Image metadata deleted successfully' };
+        } catch (error) {
+            console.error('Error deleting image metadata:', error);
+            throw error;
+        }
+    }
 }

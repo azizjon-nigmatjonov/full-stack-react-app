@@ -141,13 +141,31 @@ export const handleMultipleImagesUpload = async (req, res) => {
  */
 export const handleImageDelete = async (req, res) => {
     try {
-        const { imageUrl } = req.body;
+        const { id } = req.params;
         
-        if (!imageUrl) {
-            return res.status(400).json({ error: 'Image URL is required' });
+        if (!id) {
+            return res.status(400).json({ error: 'Image ID is required' });
         }
         
-        await deleteImageFromFirebase(imageUrl);
+        // Get image metadata from MongoDB if portfolioAPI is available
+        if (!req.portfolioAPI) {
+            return res.status(500).json({ error: 'Database connection not available' });
+        }
+        
+        // Get image metadata to retrieve the URL
+        const image = await req.portfolioAPI.getImageById(id);
+        const imageUrl = image.url;
+        
+        // Delete from storage (Firebase Storage)
+        try {
+            await deleteImageFromFirebase(imageUrl);
+        } catch (storageError) {
+            console.error('Error deleting image from storage:', storageError);
+            // Continue with DB deletion even if storage deletion fails
+        }
+        
+        // Delete image metadata from MongoDB
+        await req.portfolioAPI.deleteImageById(id);
         
         res.json({
             success: true,
@@ -156,7 +174,8 @@ export const handleImageDelete = async (req, res) => {
         
     } catch (error) {
         console.error('Delete error:', error);
-        res.status(500).json({ 
+        const statusCode = error.message === 'Image not found' || error.message === 'Invalid image ID format' ? 404 : 500;
+        res.status(statusCode).json({ 
             error: error.message || 'Failed to delete image' 
         });
     }
