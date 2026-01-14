@@ -132,7 +132,6 @@ Deletes the about me entry.
   "message": "About me deleted successfully"
 }
 ```
-
 **Status Codes:**
 - `200` - Deleted successfully
 - `404` - Not found
