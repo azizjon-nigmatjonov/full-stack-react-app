@@ -9,6 +9,7 @@ import { OwnerAPI } from './owner.js';
 import { UsersAPI } from './users.js';
 import { MeAPI } from './me.js';
 import { PortfolioAPI } from './portfolio.js';
+import { ExperienceAPI } from './experience.js';
 import { upload, handleImageUpload, handleMultipleImagesUpload, handleImageDelete, handleImagesList } from './upload.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -22,6 +23,7 @@ let ownerAPI;
 let usersAPI;
 let meAPI;
 let portfolioAPI;
+let experienceAPI;
 
 const app = express();
 const PORT = process.env.PORT || 8888;
@@ -59,6 +61,7 @@ async function connectToMongo() {
         usersAPI = new UsersAPI(db);
         meAPI = new MeAPI(db);
         portfolioAPI = new PortfolioAPI(db);
+        experienceAPI = new ExperienceAPI(db);
         console.log('Connected to MongoDB');
     } catch (error) {
         console.error('Error connecting to MongoDB:', error);
@@ -144,6 +147,79 @@ app.get('/api/images', (req, res, next) => {
     next();
 }, handleImagesList);
 
+// ==================== Experience API Routes (Public GET endpoints) ====================
+
+// About Me routes
+app.get('/api/about-me', async (req, res) => {
+    try {
+        const aboutMe = await experienceAPI.getAboutMe();
+        res.json(aboutMe);
+    } catch (error) {
+        const statusCode = error.message === 'About me not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
+// Contacts routes
+app.get('/api/contacts', async (req, res) => {
+    try {
+        const contacts = await experienceAPI.getAllContacts();
+        res.json(contacts);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/contacts/:id', async (req, res) => {
+    try {
+        const contact = await experienceAPI.getContactById(req.params.id);
+        res.json(contact);
+    } catch (error) {
+        const statusCode = error.message === 'Contact not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
+// Experiences routes
+app.get('/api/experiences', async (req, res) => {
+    try {
+        const experiences = await experienceAPI.getAllExperiences();
+        res.json(experiences);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/experiences/:id', async (req, res) => {
+    try {
+        const experience = await experienceAPI.getExperienceById(req.params.id);
+        res.json(experience);
+    } catch (error) {
+        const statusCode = error.message === 'Experience not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
+// Skills routes
+app.get('/api/skills', async (req, res) => {
+    try {
+        const skills = await experienceAPI.getAllSkills();
+        res.json(skills);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/skills/:id', async (req, res) => {
+    try {
+        const skill = await experienceAPI.getSkillById(req.params.id);
+        res.json(skill);
+    } catch (error) {
+        const statusCode = error.message === 'Skill not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
 // Protected portfolio routes
 app.use(async function(req, res, next) {
     const {authtoken} = req.headers;
@@ -203,12 +279,141 @@ app.delete('/api/portfolios/:id', async (req, res) => {
     }
 });
 
+// ==================== Experience API Routes (Protected POST/PUT/DELETE endpoints) ====================
+
+// About Me routes
+app.post('/api/about-me', async (req, res) => {
+    try {
+        const aboutMe = await experienceAPI.createAboutMe(req.body);
+        res.status(201).json(aboutMe);
+    } catch (error) {
+        const statusCode = error.message.includes('already exists') ? 409 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
+app.put('/api/about-me', async (req, res) => {
+    try {
+        const updatedAboutMe = await experienceAPI.updateAboutMe(req.body);
+        res.json(updatedAboutMe);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/about-me', async (req, res) => {
+    try {
+        const result = await experienceAPI.deleteAboutMe();
+        res.json(result);
+    } catch (error) {
+        const statusCode = error.message === 'About me not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
+// Contacts routes
+app.post('/api/contacts', async (req, res) => {
+    try {
+        const contact = await experienceAPI.createContact(req.body);
+        res.status(201).json(contact);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.put('/api/contacts/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updatedContact = await experienceAPI.updateContact(id, req.body);
+        res.json(updatedContact);
+    } catch (error) {
+        const statusCode = error.message === 'Contact not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
+app.delete('/api/contacts/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await experienceAPI.deleteContact(id);
+        res.json(result);
+    } catch (error) {
+        const statusCode = error.message === 'Contact not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
+// Experiences routes
+app.post('/api/experiences', async (req, res) => {
+    try {
+        const experience = await experienceAPI.createExperience(req.body);
+        res.status(201).json(experience);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.put('/api/experiences/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updatedExperience = await experienceAPI.updateExperience(id, req.body);
+        res.json(updatedExperience);
+    } catch (error) {
+        const statusCode = error.message === 'Experience not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
+app.delete('/api/experiences/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await experienceAPI.deleteExperience(id);
+        res.json(result);
+    } catch (error) {
+        const statusCode = error.message === 'Experience not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
+// Skills routes
+app.post('/api/skills', async (req, res) => {
+    try {
+        const skill = await experienceAPI.createSkill(req.body);
+        res.status(201).json(skill);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.put('/api/skills/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updatedSkill = await experienceAPI.updateSkill(id, req.body);
+        res.json(updatedSkill);
+    } catch (error) {
+        const statusCode = error.message === 'Skill not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
+app.delete('/api/skills/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await experienceAPI.deleteSkill(id);
+        res.json(result);
+    } catch (error) {
+        const statusCode = error.message === 'Skill not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
 async function startServer() {
     await connectToMongo();
     await ownerAPI.initializeArticles();
     await usersAPI.initializeUsers();
     await meAPI.initializeMe();
     await portfolioAPI.initializePortfolios();
+    await experienceAPI.initializeExperienceData();
 
     app.listen(PORT, () => {
         console.log(`Server is running on http://localhost:${PORT}`);
