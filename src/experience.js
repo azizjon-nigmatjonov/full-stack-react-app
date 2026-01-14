@@ -412,7 +412,7 @@ export class ExperienceAPI {
                 const defaultAboutMe = {
                     title: "About Me",
                     content: "I'm a Frontend Developer with 4+ years of professional experience, specializing in React, TypeScript, Next.js and Vue.js ecosystems. I've successfully delivered scalable applications across Manufacturing, Distribution, IT Outsourcing, FinTech, E-commerce, and Media industries, serving thousands of daily users with high-performance solutions.",
-                    image: "/me.jpeg",
+                    image: "https://i.ibb.co/BVKxNsNR/1760214133973-57f431a58820974d58c926865d32dffa-1756801360-jpeg.jpg",
                     createdAt: new Date(),
                     updatedAt: new Date()
                 };

@@ -42,7 +42,7 @@ Returns the about me information.
   "_id": "507f1f77bcf86cd799439011",
   "title": "About Me",
   "content": "I'm a Frontend Developer with 4+ years of professional experience...",
-  "image": "/me.jpeg",
+  "image": "https://i.ibb.co/BVKxNsNR/1760214133973-57f431a58820974d58c926865d32dffa-1756801360-jpeg.jpg",
   "createdAt": "2024-01-01T00:00:00.000Z",
   "updatedAt": "2024-01-01T00:00:00.000Z"
 }
@@ -65,7 +65,7 @@ Creates a new about me entry. Only one about me entry can exist.
 {
   "title": "About Me",
   "content": "Your about me content here...",
-  "image": "/me.jpeg"
+  "image": "https://i.ibb.co/example/image.jpg"
 }
 ```
 
@@ -75,7 +75,7 @@ Creates a new about me entry. Only one about me entry can exist.
   "_id": "507f1f77bcf86cd799439011",
   "title": "About Me",
   "content": "Your about me content here...",
-  "image": "/me.jpeg",
+  "image": "https://i.ibb.co/example/image.jpg",
   "createdAt": "2024-01-01T00:00:00.000Z",
   "updatedAt": "2024-01-01T00:00:00.000Z"
 }
@@ -98,7 +98,7 @@ Updates the existing about me entry.
 {
   "title": "About Me",
   "content": "Updated content here...",
-  "image": "/updated-me.jpeg"
+  "image": "https://i.ibb.co/example/updated-image.jpg"
 }
 ```
 
@@ -108,7 +108,7 @@ Updates the existing about me entry.
   "_id": "507f1f77bcf86cd799439011",
   "title": "About Me",
   "content": "Updated content here...",
-  "image": "/updated-me.jpeg",
+  "image": "https://i.ibb.co/example/updated-image.jpg",
   "createdAt": "2024-01-01T00:00:00.000Z",
   "updatedAt": "2024-01-02T00:00:00.000Z"
 }
@@ -805,14 +805,16 @@ const createSkill = async (skillData) => {
 
 2. **Timestamps**: All resources automatically include `createdAt` and `updatedAt` timestamps.
 
-3. **Sorting**: 
+3. **Image URLs**: The `image` field in About Me API must be a **full URL** (e.g., `https://i.ibb.co/example/image.jpg`), not a relative path. This ensures the frontend can directly use the URL without additional processing.
+
+4. **Sorting**: 
    - Experiences are sorted by `startDate` (descending)
    - Skills are sorted by `category` and `name` (ascending)
    - Contacts are sorted by `_id` (descending)
 
-4. **Initialization**: The database is automatically initialized with default data on first server start if collections are empty.
+5. **Initialization**: The database is automatically initialized with default data on first server start if collections are empty.
 
-5. **CORS**: The API supports CORS and accepts requests from any origin.
+6. **CORS**: The API supports CORS and accepts requests from any origin.
 
 ---
 
