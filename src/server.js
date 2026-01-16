@@ -10,6 +10,7 @@ import { UsersAPI } from './users.js';
 import { MeAPI } from './me.js';
 import { PortfolioAPI } from './portfolio.js';
 import { ExperienceAPI } from './experience.js';
+import { BlogAPI } from './blog.js';
 import { upload, handleImageUpload, handleMultipleImagesUpload, handleImageDelete, handleImagesList } from './upload.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -24,6 +25,7 @@ let usersAPI;
 let meAPI;
 let portfolioAPI;
 let experienceAPI;
+let blogAPI;
 
 const app = express();
 const PORT = process.env.PORT || 8888;
@@ -62,6 +64,7 @@ async function connectToMongo() {
         meAPI = new MeAPI(db);
         portfolioAPI = new PortfolioAPI(db);
         experienceAPI = new ExperienceAPI(db);
+        blogAPI = new BlogAPI(db);
         console.log('Connected to MongoDB');
     } catch (error) {
         console.error('Error connecting to MongoDB:', error);
@@ -216,6 +219,91 @@ app.get('/api/skills/:id', async (req, res) => {
         res.json(skill);
     } catch (error) {
         const statusCode = error.message === 'Skill not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
+// ==================== Blog API Routes (Public GET endpoints) ====================
+
+// Get all blog posts
+app.get('/api/blog/posts', async (req, res) => {
+    try {
+        const posts = await blogAPI.getAllBlogPosts();
+        res.json(posts);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get blog post by ID or slug
+app.get('/api/blog/posts/:id', async (req, res) => {
+    try {
+        const post = await blogAPI.getBlogPostById(req.params.id);
+        res.json(post);
+    } catch (error) {
+        const statusCode = error.message === 'Blog post not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
+// Get blog post by slug (alternative endpoint)
+app.get('/api/blog/posts/slug/:slug', async (req, res) => {
+    try {
+        const post = await blogAPI.getBlogPostBySlug(req.params.slug);
+        res.json(post);
+    } catch (error) {
+        const statusCode = error.message === 'Blog post not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
+// Get all categories
+app.get('/api/blog/categories', async (req, res) => {
+    try {
+        const categories = await blogAPI.getAllCategories();
+        res.json(categories);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get all tags
+app.get('/api/blog/tags', async (req, res) => {
+    try {
+        const tags = await blogAPI.getAllTags();
+        res.json(tags);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get blog posts by category
+app.get('/api/blog/category/:category', async (req, res) => {
+    try {
+        const posts = await blogAPI.getBlogPostsByCategory(req.params.category);
+        res.json(posts);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get blog posts by tag
+app.get('/api/blog/tag/:tag', async (req, res) => {
+    try {
+        const posts = await blogAPI.getBlogPostsByTag(req.params.tag);
+        res.json(posts);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Increment views (public endpoint for tracking)
+app.post('/api/blog/posts/:id/views', async (req, res) => {
+    try {
+        const post = await blogAPI.incrementViews(req.params.id);
+        res.json(post);
+    } catch (error) {
+        const statusCode = error.message === 'Blog post not found' ? 404 : 500;
         res.status(statusCode).json({ error: error.message });
     }
 });
@@ -407,6 +495,55 @@ app.delete('/api/skills/:id', async (req, res) => {
     }
 });
 
+// ==================== Blog API Routes (Protected POST/PUT/DELETE endpoints) ====================
+
+// Create blog post
+app.post('/api/blog/posts', async (req, res) => {
+    try {
+        const post = await blogAPI.createBlogPost(req.body);
+        res.status(201).json(post);
+    } catch (error) {
+        const statusCode = error.message.includes('already exists') ? 409 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
+// Update blog post
+app.put('/api/blog/posts/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updatedPost = await blogAPI.updateBlogPost(id, req.body);
+        res.json(updatedPost);
+    } catch (error) {
+        const statusCode = error.message === 'Blog post not found' || error.message.includes('already exists') ? 
+            (error.message === 'Blog post not found' ? 404 : 409) : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
+// Delete blog post
+app.delete('/api/blog/posts/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await blogAPI.deleteBlogPost(id);
+        res.json(result);
+    } catch (error) {
+        const statusCode = error.message === 'Blog post not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
+// Toggle like (protected endpoint)
+app.post('/api/blog/posts/:id/like', async (req, res) => {
+    try {
+        const post = await blogAPI.toggleLike(req.params.id);
+        res.json(post);
+    } catch (error) {
+        const statusCode = error.message === 'Blog post not found' ? 404 : 500;
+        res.status(statusCode).json({ error: error.message });
+    }
+});
+
 async function startServer() {
     await connectToMongo();
     await ownerAPI.initializeArticles();
@@ -414,6 +551,7 @@ async function startServer() {
     await meAPI.initializeMe();
     await portfolioAPI.initializePortfolios();
     await experienceAPI.initializeExperienceData();
+    await blogAPI.initializeBlogPosts();
 
     app.listen(PORT, () => {
         console.log(`Server is running on http://localhost:${PORT}`);
