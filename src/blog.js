@@ -20,27 +20,43 @@ export class BlogAPI {
 
     async getBlogPostById(id) {
         try {
-            let post;
+            let query;
+            let updateResult;
             
             if (id.match(/^[0-9a-fA-F]{24}$/)) {
-                post = await this.db.collection('blogPosts').findOne({ _id: new ObjectId(id) });
+                query = { _id: new ObjectId(id) };
+                updateResult = await this.db.collection('blogPosts').findOneAndUpdate(
+                    query,
+                    { $inc: { views: 1 } },
+                    { returnDocument: 'after' }
+                );
             } else if (/^\d+$/.test(id)) {
-                post = await this.db.collection('blogPosts').findOne({ 
+                query = { 
                     $or: [
                         { id: parseInt(id) },
                         { id: id },
                         { slug: id }
                     ]
-                });
+                };
+                updateResult = await this.db.collection('blogPosts').findOneAndUpdate(
+                    query,
+                    { $inc: { views: 1 } },
+                    { returnDocument: 'after' }
+                );
             } else {
-                post = await this.db.collection('blogPosts').findOne({ slug: id });
+                query = { slug: id };
+                updateResult = await this.db.collection('blogPosts').findOneAndUpdate(
+                    query,
+                    { $inc: { views: 1 } },
+                    { returnDocument: 'after' }
+                );
             }
             
-            if (!post) {
+            if (!updateResult) {
                 throw new Error('Blog post not found');
             }
             
-            return post;
+            return updateResult;
         } catch (error) {
             console.error('Error fetching blog post by id:', error);
             throw new Error(error.message || 'Failed to fetch blog post');
@@ -49,13 +65,17 @@ export class BlogAPI {
 
     async getBlogPostBySlug(slug) {
         try {
-            const post = await this.db.collection('blogPosts').findOne({ slug: slug });
+            const updateResult = await this.db.collection('blogPosts').findOneAndUpdate(
+                { slug: slug },
+                { $inc: { views: 1 } },
+                { returnDocument: 'after' }
+            );
             
-            if (!post) {
+            if (!updateResult) {
                 throw new Error('Blog post not found');
             }
             
-            return post;
+            return updateResult;
         } catch (error) {
             console.error('Error fetching blog post by slug:', error);
             throw new Error(error.message || 'Failed to fetch blog post');
