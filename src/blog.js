@@ -1,4 +1,5 @@
 import { ObjectId } from 'mongodb';
+import { sendBlogPostNotification } from './telegram.js';
 
 export class BlogAPI {
     constructor(db) {
@@ -80,10 +81,26 @@ export class BlogAPI {
             };
             
             const result = await this.db.collection('blogPosts').insertOne(dataWithTimestamp);
-            return {
+            const createdPost = {
                 ...dataWithTimestamp,
                 _id: result.insertedId
             };
+
+            // Generate blog URL and send to Telegram (don't block the response)
+            const websiteDomain = process.env.WEBSITE_DOMAIN || 'https://www.azizjon7.uz';
+            const blogUrl = `${websiteDomain}/blog/${postData.slug}`;
+            
+            // Send to Telegram asynchronously (don't await to avoid blocking the response)
+            sendBlogPostNotification(blogUrl, postData.title || 'New Blog Post', postData.excerpt || '')
+                .then(() => {
+                    console.log(`Blog post notification sent to Telegram: ${blogUrl}`);
+                })
+                .catch((error) => {
+                    console.error('Failed to send Telegram notification:', error);
+                    // Don't throw - we don't want to fail the blog post creation if Telegram fails
+                });
+
+            return createdPost;
         } catch (error) {
             console.error('Error creating blog post:', error);
             throw new Error(error.message || 'Failed to create blog post');
