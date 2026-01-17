@@ -86,19 +86,45 @@ export class BlogAPI {
                 _id: result.insertedId
             };
 
-            // Generate blog URL and send to Telegram (don't block the response)
+            // Generate blog URL and schedule Telegram notification after 10 minutes
             const websiteDomain = process.env.WEBSITE_DOMAIN || 'https://www.azizjon7.uz';
             const blogUrl = `${websiteDomain}/blog/${postData.slug}`;
             
-            // Send to Telegram asynchronously (don't await to avoid blocking the response)
-            sendBlogPostNotification(blogUrl, postData.title || 'New Blog Post', postData.excerpt || '')
-                .then(() => {
-                    console.log(`Blog post notification sent to Telegram: ${blogUrl}`);
-                })
-                .catch((error) => {
-                    console.error('Failed to send Telegram notification:', error);
+            // Schedule Telegram notification after 10 minutes (600,000 milliseconds)
+            // Each blog post gets its own independent 10-minute timer
+            // Multiple posts will each send their notification after their own 10-minute delay
+            const postTitle = postData.title || 'New Blog Post';
+            const postExcerpt = postData.excerpt || '';
+            const postId = result.insertedId; // Store the MongoDB _id to check if post still exists
+            const db = this.db; // Capture database reference for use in async function
+            
+            console.log(`Blog post "${postTitle}" created. Telegram notification scheduled for 10 minutes from now.`);
+            
+            // Using IIFE (Immediately Invoked Function Expression) for each post independently
+            (async () => {
+                try {
+                    // Wait 10 minutes (600,000 milliseconds)
+                    // Each post has its own timer, so multiple posts run in parallel
+                    await new Promise(resolve => setTimeout(resolve, 10 * 60 * 1000));
+                    
+                    // Check if the post still exists in the database before sending notification
+                    const existingPost = await db.collection('blogPosts').findOne({ 
+                        _id: postId 
+                    });
+                    
+                    if (!existingPost) {
+                        console.log(`⏭️  Blog post "${postTitle}" was deleted before 10 minutes. Skipping Telegram notification.`);
+                        return;
+                    }
+                    
+                    // Post still exists, send notification
+                    await sendBlogPostNotification(blogUrl, postTitle, postExcerpt);
+                    console.log(`✅ Blog post notification sent to Telegram after 10 minutes: ${postTitle} - ${blogUrl}`);
+                } catch (error) {
+                    console.error(`❌ Failed to send Telegram notification for "${postTitle}":`, error);
                     // Don't throw - we don't want to fail the blog post creation if Telegram fails
-                });
+                }
+            })();
 
             return createdPost;
         } catch (error) {
