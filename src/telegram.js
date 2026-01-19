@@ -57,6 +57,8 @@ export const sendBlogPostNotification = async (blogUrl, title, excerpt) => {
     }
 
     const message = `
+🚀 <b>New Blog Post Published!</b>
+
 📝 <b>${title}</b>
 
 ${excerpt}
