@@ -6,6 +6,36 @@ export class BlogAPI {
         this.db = db;
     }
 
+    // Validate content blocks, including new "link" type
+    validateContentBlocks(content) {
+        if (!Array.isArray(content)) {
+            throw new Error('ValidationError: content must be an array');
+        }
+
+        const isFullUrl = (value) => typeof value === 'string' && /^https?:\/\/.+/i.test(value);
+        const isNonEmptyString = (value) => typeof value === 'string' && value.trim().length > 0;
+
+        for (const block of content) {
+            if (!block || typeof block !== 'object') {
+                throw new Error('ValidationError: each content block must be an object');
+            }
+
+            if (!block.type) continue; // skip validation if type missing, existing behavior
+
+            if (block.type === 'link') {
+                if (!isNonEmptyString(block.linkTitle)) {
+                    throw new Error('ValidationError: linkTitle is required for link block');
+                }
+                if (!isFullUrl(block.linkUrl)) {
+                    throw new Error('ValidationError: linkUrl must be a full URL starting with http:// or https://');
+                }
+                if (block.linkImage && !isFullUrl(block.linkImage)) {
+                    throw new Error('ValidationError: linkImage must be a full URL starting with http:// or https://');
+                }
+            }
+        }
+    }
+
     // ==================== Blog Posts Methods ====================
     
     async getAllBlogPosts() {
@@ -90,6 +120,10 @@ export class BlogAPI {
                 if (existingPost) {
                     throw new Error('Blog post with this slug already exists');
                 }
+            }
+
+            if (postData.content) {
+                this.validateContentBlocks(postData.content);
             }
 
             const dataWithTimestamp = {
@@ -182,6 +216,10 @@ export class BlogAPI {
                 }
             }
             
+            if (postData.content) {
+                this.validateContentBlocks(postData.content);
+            }
+
             const { _id, ...updateData } = postData;
             const dataWithTimestamp = {
                 ...updateData,
