@@ -503,9 +503,7 @@ app.post('/api/blog/posts', async (req, res) => {
         const post = await blogAPI.createBlogPost(req.body);
         res.status(201).json(post);
     } catch (error) {
-        const statusCode = error.message.includes('ValidationError') ? 400
-            : error.message.includes('already exists') ? 409
-            : 500;
+        const statusCode = error.message.includes('already exists') ? 409 : 500;
         res.status(statusCode).json({ error: error.message });
     }
 });
@@ -517,10 +515,8 @@ app.put('/api/blog/posts/:id', async (req, res) => {
         const updatedPost = await blogAPI.updateBlogPost(id, req.body);
         res.json(updatedPost);
     } catch (error) {
-        const statusCode = error.message.includes('ValidationError') ? 400
-            : (error.message === 'Blog post not found' ? 404
-            : error.message.includes('already exists') ? 409
-            : 500);
+        const statusCode = error.message === 'Blog post not found' || error.message.includes('already exists') ? 
+            (error.message === 'Blog post not found' ? 404 : 409) : 500;
         res.status(statusCode).json({ error: error.message });
     }
 });

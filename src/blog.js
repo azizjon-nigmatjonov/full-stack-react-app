@@ -6,36 +6,6 @@ export class BlogAPI {
         this.db = db;
     }
 
-    // Validate content blocks, including new "link" type
-    validateContentBlocks(content) {
-        if (!Array.isArray(content)) {
-            throw new Error('ValidationError: content must be an array');
-        }
-
-        const isFullUrl = (value) => typeof value === 'string' && /^https?:\/\/.+/i.test(value);
-        const isNonEmptyString = (value) => typeof value === 'string' && value.trim().length > 0;
-
-        for (const block of content) {
-            if (!block || typeof block !== 'object') {
-                throw new Error('ValidationError: each content block must be an object');
-            }
-
-            if (!block.type) continue; // skip validation if type missing, existing behavior
-
-            if (block.type === 'link') {
-                if (!isNonEmptyString(block.linkTitle)) {
-                    throw new Error('ValidationError: linkTitle is required for link block');
-                }
-                if (!isFullUrl(block.linkUrl)) {
-                    throw new Error('ValidationError: linkUrl must be a full URL starting with http:// or https://');
-                }
-                if (block.linkImage && !isFullUrl(block.linkImage)) {
-                    throw new Error('ValidationError: linkImage must be a full URL starting with http:// or https://');
-                }
-            }
-        }
-    }
-
     // ==================== Blog Posts Methods ====================
     
     async getAllBlogPosts() {
@@ -50,43 +20,27 @@ export class BlogAPI {
 
     async getBlogPostById(id) {
         try {
-            let query;
-            let updateResult;
+            let post;
             
             if (id.match(/^[0-9a-fA-F]{24}$/)) {
-                query = { _id: new ObjectId(id) };
-                updateResult = await this.db.collection('blogPosts').findOneAndUpdate(
-                    query,
-                    { $inc: { views: 1 } },
-                    { returnDocument: 'after' }
-                );
+                post = await this.db.collection('blogPosts').findOne({ _id: new ObjectId(id) });
             } else if (/^\d+$/.test(id)) {
-                query = { 
+                post = await this.db.collection('blogPosts').findOne({ 
                     $or: [
                         { id: parseInt(id) },
                         { id: id },
                         { slug: id }
                     ]
-                };
-                updateResult = await this.db.collection('blogPosts').findOneAndUpdate(
-                    query,
-                    { $inc: { views: 1 } },
-                    { returnDocument: 'after' }
-                );
+                });
             } else {
-                query = { slug: id };
-                updateResult = await this.db.collection('blogPosts').findOneAndUpdate(
-                    query,
-                    { $inc: { views: 1 } },
-                    { returnDocument: 'after' }
-                );
+                post = await this.db.collection('blogPosts').findOne({ slug: id });
             }
             
-            if (!updateResult) {
+            if (!post) {
                 throw new Error('Blog post not found');
             }
             
-            return updateResult;
+            return post;
         } catch (error) {
             console.error('Error fetching blog post by id:', error);
             throw new Error(error.message || 'Failed to fetch blog post');
@@ -95,17 +49,13 @@ export class BlogAPI {
 
     async getBlogPostBySlug(slug) {
         try {
-            const updateResult = await this.db.collection('blogPosts').findOneAndUpdate(
-                { slug: slug },
-                { $inc: { views: 1 } },
-                { returnDocument: 'after' }
-            );
+            const post = await this.db.collection('blogPosts').findOne({ slug: slug });
             
-            if (!updateResult) {
+            if (!post) {
                 throw new Error('Blog post not found');
             }
             
-            return updateResult;
+            return post;
         } catch (error) {
             console.error('Error fetching blog post by slug:', error);
             throw new Error(error.message || 'Failed to fetch blog post');
@@ -120,10 +70,6 @@ export class BlogAPI {
                 if (existingPost) {
                     throw new Error('Blog post with this slug already exists');
                 }
-            }
-
-            if (postData.content) {
-                this.validateContentBlocks(postData.content);
             }
 
             const dataWithTimestamp = {
@@ -216,10 +162,6 @@ export class BlogAPI {
                 }
             }
             
-            if (postData.content) {
-                this.validateContentBlocks(postData.content);
-            }
-
             const { _id, ...updateData } = postData;
             const dataWithTimestamp = {
                 ...updateData,

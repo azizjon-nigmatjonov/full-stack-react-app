@@ -55,14 +55,15 @@ export const sendBlogPostNotification = async (blogUrl, title, excerpt) => {
         console.warn('Telegram credentials not configured. Skipping notification.');
         return null;
     }
-    // 🚀 <b>New Blog Post Published!</b>
-    // 📝 
+
     const message = `
-<b>${title}</b>
+🚀 <b>New Blog Post Published!</b>
+
+📝 <b>${title}</b>
 
 ${excerpt}
 
-🔗 <a href="${blogUrl}">Read more on my website→</a>
+🔗 <a href="${blogUrl}">Read more →</a>
     `.trim();
 
     return await sendTelegramMessage(message, botToken, channelId);
